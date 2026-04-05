@@ -40,11 +40,20 @@ async def probe_video(file_path: str) -> VideoMetadata:
         file_path,
     ]
 
-    process = await asyncio.create_subprocess_exec(
-        *cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
+    try:
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+    except FileNotFoundError:
+        raise CompressionError(
+            f"FFprobe not found at '{settings.ffprobe_path}'.\n\n"
+            "Please install FFmpeg and make sure ffprobe is in your PATH.\n"
+            "Download from: https://ffmpeg.org/download.html\n\n"
+            "On Windows you can also set FFPROBE_PATH in your .env file."
+        ) from None
+
     stdout, stderr = await process.communicate()
 
     if process.returncode != 0:
@@ -166,11 +175,20 @@ async def compress_video(
         args = _build_ffmpeg_args(input_path, output_path, s)
         logger.debug("FFmpeg command: %s", " ".join(args))
 
-        process = await asyncio.create_subprocess_exec(
-            *args,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
+        try:
+            process = await asyncio.create_subprocess_exec(
+                *args,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+        except FileNotFoundError:
+            raise CompressionError(
+                f"FFmpeg not found at '{settings.ffmpeg_path}'.\n\n"
+                "Please install FFmpeg and make sure it is in your PATH.\n"
+                "Download from: https://ffmpeg.org/download.html\n\n"
+                "On Windows you can also set FFMPEG_PATH in your .env file."
+            ) from None
+
         _, stderr_data = await process.communicate()
 
         if process.returncode != 0:

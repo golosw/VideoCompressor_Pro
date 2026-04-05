@@ -210,7 +210,7 @@ class VideoCompressorApp(ctk.CTk):
 
         ctk.CTkLabel(
             inner,
-            text="Supports MP4, AVI, MKV, MOV, WebM, and more (up to 500 MB)",
+            text="Supports MP4, AVI, MKV, MOV, WebM, and more — no size limit",
             font=ctk.CTkFont(size=13),
             text_color=TEXT_MUTED,
         ).pack()
@@ -512,6 +512,25 @@ class VideoCompressorApp(ctk.CTk):
             font=ctk.CTkFont(size=11), text_color=TEXT_MUTED,
         ).pack(side="right")
 
+        # Resolution (downscale)
+        row4 = ctk.CTkFrame(settings_grid, fg_color="transparent")
+        row4.pack(fill="x", pady=4)
+
+        ctk.CTkLabel(
+            row4, text="Resolution", font=ctk.CTkFont(size=13),
+            text_color=TEXT_DIM, width=120, anchor="w",
+        ).pack(side="left")
+
+        self._resolution_var = ctk.StringVar(value="Original")
+        ctk.CTkOptionMenu(
+            row4, variable=self._resolution_var,
+            values=["Original", "3840x2160 (4K)", "2560x1440 (2K)",
+                    "1920x1080 (1080p)", "1280x720 (720p)",
+                    "854x480 (480p)", "640x360 (360p)"],
+            width=200, height=30,
+            fg_color=PANEL_BG, button_color=BORDER,
+        ).pack(side="left")
+
         # Compress button
         self._compress_btn = ctk.CTkButton(
             card,
@@ -580,6 +599,20 @@ class VideoCompressorApp(ctk.CTk):
         self._crf_var.set(s.crf)
         self._on_crf_change(s.crf)
 
+        # Update resolution dropdown if AI recommends one
+        if s.resolution:
+            res_map = {
+                "3840x2160": "3840x2160 (4K)",
+                "2560x1440": "2560x1440 (2K)",
+                "1920x1080": "1920x1080 (1080p)",
+                "1280x720": "1280x720 (720p)",
+                "854x480": "854x480 (480p)",
+                "640x360": "640x360 (360p)",
+            }
+            self._resolution_var.set(res_map.get(s.resolution, "Original"))
+        else:
+            self._resolution_var.set("Original")
+
         # Show explanation
         self._ai_result_label.configure(text=result.explanation)
         self._ai_result_label.pack(fill="x", padx=16, pady=(0, 12))
@@ -600,10 +633,18 @@ class VideoCompressorApp(ctk.CTk):
             "VP9": VideoCodec.VP9,
             "AV1": VideoCodec.AV1,
         }
+        # Parse resolution selection
+        res_val = self._resolution_var.get()
+        resolution = None
+        if res_val != "Original":
+            # Extract "WxH" from e.g. "1920x1080 (1080p)"
+            resolution = res_val.split(" ")[0]
+
         s = CompressionSettings(
             video_codec=codec_map.get(self._codec_var.get(), VideoCodec.H264),
             preset=CompressionPreset(self._preset_var.get().lower()),
             crf=self._crf_var.get(),
+            resolution=resolution,
         )
 
         def run():

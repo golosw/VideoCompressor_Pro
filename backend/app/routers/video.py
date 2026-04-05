@@ -7,7 +7,7 @@ from fastapi import APIRouter, File, UploadFile
 from fastapi.responses import FileResponse
 
 from app.core.config import settings
-from app.core.exceptions import FileTooLargeError, UnsupportedFormatError
+from app.core.exceptions import UnsupportedFormatError
 from app.core.logging import logger
 from app.models.schemas import CompressionJob, CompressionSettings, VideoMetadata
 from app.services.video_service import (
@@ -36,10 +36,6 @@ async def upload_video(file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, f)
 
     file_size = os.path.getsize(file_path)
-    if file_size > settings.max_file_size_mb * 1024 * 1024:
-        os.remove(file_path)
-        raise FileTooLargeError(settings.max_file_size_mb)
-
     logger.info("Uploaded %s (%s, %.1f MB)", file.filename, unique_name, file_size / 1024 / 1024)
 
     metadata = await probe_video(file_path)
