@@ -111,6 +111,8 @@ pyinstaller ^
     --hidden-import dotenv ^
     --collect-submodules pydantic ^
     --collect-submodules customtkinter ^
+    --collect-submodules starlette ^
+    --collect-submodules fastapi ^
     ..\gui\app.py
 
 if errorlevel 1 (
