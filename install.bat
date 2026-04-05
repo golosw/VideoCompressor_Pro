@@ -19,10 +19,9 @@ if errorlevel 1 (
 :: Check FFmpeg is installed
 ffmpeg -version >nul 2>&1
 if errorlevel 1 (
-    echo [WARNING] FFmpeg is not installed or not in PATH.
-    echo           The app requires FFmpeg for video compression.
-    echo           Download from https://ffmpeg.org/download.html
-    echo           Or install via: winget install FFmpeg
+    echo [INFO] FFmpeg is not installed or not in PATH.
+    echo        The app can download it automatically on first launch.
+    echo        Or install manually: winget install FFmpeg
     echo.
 )
 
@@ -103,6 +102,7 @@ pyinstaller ^
     --hidden-import app.routers.ai ^
     --hidden-import app.services.video_service ^
     --hidden-import app.services.ai_service ^
+    --hidden-import app.services.ffmpeg_downloader ^
     --hidden-import app.models.schemas ^
     --hidden-import multipart ^
     --hidden-import httpx ^
@@ -129,9 +129,10 @@ echo.
 echo   Executable: backend\dist\VideoCompressorPro.exe
 echo.
 echo   To run:
-echo     1. Make sure FFmpeg is installed and in PATH
-echo     2. Double-click VideoCompressorPro.exe
+echo     1. Double-click VideoCompressorPro.exe
 echo        or run: dist\VideoCompressorPro.exe
+echo     2. If FFmpeg is not installed, the app will offer
+echo        to download it automatically on first launch.
 echo     3. The app opens fullscreen automatically
 echo        Press ESC or F11 to toggle fullscreen
 echo.
