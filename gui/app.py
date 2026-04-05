@@ -215,7 +215,10 @@ class VideoCompressorApp(ctk.CTk):
         self._show_upload_view()
 
     def _on_ffmpeg_download_error(self, error: str) -> None:
+        navigated_away = not self._ffmpeg_downloading
         self._ffmpeg_downloading = False
+        if navigated_away:
+            return  # User already moved on; don't pop up an intrusive dialog
         try:
             self._ffmpeg_dl_btn.configure(text="\u2b07  Download FFmpeg", state="normal")
             self._ffmpeg_skip_btn.configure(state="normal")
