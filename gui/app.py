@@ -10,10 +10,25 @@ from tkinter import filedialog, messagebox
 
 import customtkinter as ctk
 
-# Add backend to path so we can import services directly
-_root = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(_root / "backend"))
-os.chdir(_root / "backend")
+
+def _setup_backend_path() -> None:
+    """Set up sys.path and working directory for backend imports.
+
+    Handles both normal execution and PyInstaller frozen mode.
+    """
+    if getattr(sys, "frozen", False):
+        # PyInstaller --onefile: executable lives next to the app/ package
+        base = Path(sys.executable).parent
+        sys.path.insert(0, str(base))
+        os.chdir(base)
+    else:
+        # Normal Python execution: gui/ is a sibling of backend/
+        root = Path(__file__).resolve().parent.parent
+        sys.path.insert(0, str(root / "backend"))
+        os.chdir(root / "backend")
+
+
+_setup_backend_path()
 
 from app.core.config import settings  # noqa: E402
 from app.models.schemas import (  # noqa: E402
@@ -805,12 +820,6 @@ class VideoCompressorApp(ctk.CTk):
 
 
 def main() -> None:
-    # Handle frozen exe paths
-    if getattr(sys, "frozen", False):
-        base = Path(sys.executable).parent
-        os.chdir(base)
-        sys.path.insert(0, str(base))
-
     app = VideoCompressorApp()
     app.mainloop()
 
