@@ -8,16 +8,28 @@ from pydantic_settings import BaseSettings
 def _find_ffmpeg_binary(name: str) -> str:
     """Locate an FFmpeg binary (ffmpeg or ffprobe) on the current system.
 
-    Checks PATH first, then common Windows install locations.
-    Returns the full path if found, otherwise returns the bare name
-    so the error message from subprocess is clear.
+    Search order:
+      1. System PATH
+      2. Local ``ffmpeg/`` directory (auto-downloaded binaries)
+      3. Common Windows install locations
+      4. Bare name fallback (gives clear FileNotFoundError)
     """
     # 1. Check if it's already on PATH
     found = shutil.which(name)
     if found:
         return found
 
-    # 2. On Windows, check common install directories
+    # 2. Check local ffmpeg/ directory (populated by auto-downloader)
+    if getattr(sys, "frozen", False):
+        local_dir = Path(sys.executable).parent / "ffmpeg"
+    else:
+        local_dir = Path.cwd().parent / "ffmpeg"
+    suffix = ".exe" if sys.platform == "win32" else ""
+    local_bin = local_dir / f"{name}{suffix}"
+    if local_bin.is_file():
+        return str(local_bin)
+
+    # 3. On Windows, check common install directories
     if sys.platform == "win32":
         candidates = [
             Path(r"C:\ffmpeg\bin") / f"{name}.exe",
@@ -31,7 +43,7 @@ def _find_ffmpeg_binary(name: str) -> str:
             if candidate.is_file():
                 return str(candidate)
 
-    # 3. Fallback: return the bare name (will fail with a clear FileNotFoundError)
+    # 4. Fallback: return the bare name (will fail with a clear FileNotFoundError)
     return name
 
 

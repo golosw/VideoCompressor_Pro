@@ -38,6 +38,10 @@ from app.models.schemas import (  # noqa: E402
     VideoCodec,
 )
 from app.services.ai_service import analyze_video  # noqa: E402
+from app.services.ffmpeg_downloader import (  # noqa: E402
+    download_ffmpeg,
+    is_ffmpeg_installed,
+)
 from app.services.video_service import compress_video, probe_video  # noqa: E402
 
 # ── Theme ────────────────────────────────────────────────────────────────
@@ -83,6 +87,126 @@ class VideoCompressorApp(ctk.CTk):
         settings.ensure_dirs()
 
         self._build_ui()
+
+        # Check FFmpeg availability after the window is visible
+        if not is_ffmpeg_installed():
+            self.after(300, self._show_ffmpeg_setup)
+
+    # ── FFmpeg setup dialog ───────────────────────────────────────────
+    def _show_ffmpeg_setup(self) -> None:
+        """Show a dialog offering to download FFmpeg automatically."""
+        self._clear_main()
+
+        center = ctk.CTkFrame(self._main, fg_color="transparent")
+        center.place(relx=0.5, rely=0.40, anchor="center")
+
+        ctk.CTkLabel(
+            center,
+            text="\u26a0\ufe0f  FFmpeg Not Found",
+            font=ctk.CTkFont(size=30, weight="bold"),
+            text_color=WARNING,
+        ).pack(pady=(0, 12))
+
+        ctk.CTkLabel(
+            center,
+            text=(
+                "FFmpeg is required for video compression.\n"
+                "Click below to download and install it automatically (~90 MB)."
+            ),
+            font=ctk.CTkFont(size=15),
+            text_color=TEXT_DIM,
+            justify="center",
+        ).pack(pady=(0, 30))
+
+        self._ffmpeg_progress_label = ctk.CTkLabel(
+            center, text="", font=ctk.CTkFont(size=13), text_color=TEXT_DIM,
+        )
+
+        self._ffmpeg_progress_bar = ctk.CTkProgressBar(
+            center, width=400, mode="determinate",
+            progress_color=ACCENT,
+        )
+        self._ffmpeg_progress_bar.set(0)
+
+        # Buttons row
+        btn_row = ctk.CTkFrame(center, fg_color="transparent")
+        btn_row.pack(pady=(0, 20))
+
+        self._ffmpeg_dl_btn = ctk.CTkButton(
+            btn_row,
+            text="\u2b07  Download FFmpeg",
+            fg_color=ACCENT,
+            hover_color=ACCENT_HOVER,
+            font=ctk.CTkFont(size=16, weight="bold"),
+            height=48,
+            width=260,
+            command=self._download_ffmpeg,
+        )
+        self._ffmpeg_dl_btn.pack(side="left", padx=(0, 12))
+
+        ctk.CTkButton(
+            btn_row,
+            text="Skip",
+            fg_color=CARD_BG,
+            hover_color=BORDER,
+            font=ctk.CTkFont(size=14),
+            text_color=TEXT_DIM,
+            height=48,
+            width=100,
+            command=self._show_upload_view,
+        ).pack(side="left")
+
+        ctk.CTkLabel(
+            center,
+            text="Or install manually: https://ffmpeg.org/download.html",
+            font=ctk.CTkFont(size=12),
+            text_color=TEXT_MUTED,
+        ).pack(pady=(10, 0))
+
+    def _download_ffmpeg(self) -> None:
+        """Start FFmpeg download in a background thread."""
+        self._ffmpeg_dl_btn.configure(text="\u23f3  Downloading...", state="disabled")
+        self._ffmpeg_progress_bar.pack(pady=(0, 8))
+        self._ffmpeg_progress_label.pack()
+
+        def on_progress(pct: float, status: str) -> None:
+            self.after(0, lambda: self._update_ffmpeg_progress(pct, status))
+
+        def run() -> None:
+            try:
+                download_ffmpeg(progress_callback=on_progress)
+                self.after(0, self._on_ffmpeg_download_done)
+            except Exception as exc:
+                msg = str(exc)
+                self.after(0, lambda: self._on_ffmpeg_download_error(msg))
+
+        threading.Thread(target=run, daemon=True).start()
+
+    def _update_ffmpeg_progress(self, pct: float, status: str) -> None:
+        self._ffmpeg_progress_bar.set(pct / 100)
+        self._ffmpeg_progress_label.configure(text=status)
+
+    def _on_ffmpeg_download_done(self) -> None:
+        # Refresh settings with newly available binaries
+        from app.core.config import _find_ffmpeg_binary
+
+        settings.ffmpeg_path = _find_ffmpeg_binary("ffmpeg")
+        settings.ffprobe_path = _find_ffmpeg_binary("ffprobe")
+
+        messagebox.showinfo(
+            "FFmpeg Installed",
+            "FFmpeg has been downloaded and installed successfully!\n\n"
+            f"Location: {settings.ffmpeg_path}",
+        )
+        self._show_upload_view()
+
+    def _on_ffmpeg_download_error(self, error: str) -> None:
+        self._ffmpeg_dl_btn.configure(text="\u2b07  Download FFmpeg", state="normal")
+        messagebox.showerror(
+            "Download Failed",
+            f"Failed to download FFmpeg:\n{error}\n\n"
+            "Please install it manually from:\nhttps://ffmpeg.org/download.html",
+        )
 
     # ── Fullscreen toggle ────────────────────────────────────────────────
     def _toggle_fullscreen(self) -> None:
