@@ -196,6 +196,8 @@ class VideoCompressorApp(ctk.CTk):
             pass  # Widget may have been destroyed if window is closing
 
     def _on_ffmpeg_download_done(self) -> None:
+        if not self._ffmpeg_downloading:
+            return  # User navigated away; don't interrupt their current view
         self._ffmpeg_downloading = False
         # Refresh settings with newly available binaries
         from app.core.config import _find_ffmpeg_binary
@@ -996,6 +998,7 @@ class VideoCompressorApp(ctk.CTk):
         self._metadata = None
         self._ai_result = None
         self._compressing = False
+        self._ffmpeg_downloading = False
         self._show_upload_view()
 
 
