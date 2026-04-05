@@ -785,13 +785,15 @@ class VideoCompressorApp(ctk.CTk):
 
     @staticmethod
     def _open_folder(path: str) -> None:
+        import subprocess
+
         abs_path = str(Path(path).resolve())
         if sys.platform == "win32":
             os.startfile(abs_path)
         elif sys.platform == "darwin":
-            os.system(f'open "{abs_path}"')
+            subprocess.Popen(["open", abs_path])
         else:
-            os.system(f'xdg-open "{abs_path}"')
+            subprocess.Popen(["xdg-open", abs_path])
 
     # ── Reset ────────────────────────────────────────────────────────────
     def _reset(self) -> None:
