@@ -5,15 +5,15 @@ the binaries to a local directory next to the application.
 """
 
 import io
+import logging
 import platform
-import shutil
 import stat
 import sys
 import zipfile
 from pathlib import Path
 from urllib.request import Request, urlopen
 
-from app.core.logging import logger
+logger = logging.getLogger(__name__)
 
 # BtbN provides reliable, up-to-date FFmpeg builds for Windows and Linux.
 _FFMPEG_BUILDS: dict[str, str] = {
@@ -41,16 +41,18 @@ def get_ffmpeg_dir() -> Path:
 
 
 def is_ffmpeg_installed() -> bool:
-    """Check whether ffmpeg and ffprobe are available (PATH or local dir)."""
-    ffmpeg_ok = shutil.which("ffmpeg") is not None
-    ffprobe_ok = shutil.which("ffprobe") is not None
-    if ffmpeg_ok and ffprobe_ok:
-        return True
-    # Check local directory
-    d = get_ffmpeg_dir()
-    if sys.platform == "win32":
-        return (d / "ffmpeg.exe").is_file() and (d / "ffprobe.exe").is_file()
-    return (d / "ffmpeg").is_file() and (d / "ffprobe").is_file()
+    """Check whether ffmpeg and ffprobe are available.
+
+    Uses the same search logic as ``_find_ffmpeg_binary`` in config
+    (PATH, local dir, common Windows locations) so the result is
+    consistent with what the app will actually use at runtime.
+    """
+    from app.core.config import _find_ffmpeg_binary
+
+    ffmpeg = _find_ffmpeg_binary("ffmpeg")
+    ffprobe = _find_ffmpeg_binary("ffprobe")
+    # _find_ffmpeg_binary returns the bare name as fallback when nothing is found
+    return ffmpeg != "ffmpeg" and ffprobe != "ffprobe"
 
 
 def _get_platform_key() -> str:

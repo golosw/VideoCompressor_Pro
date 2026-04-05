@@ -20,11 +20,14 @@ def _find_ffmpeg_binary(name: str) -> str:
         return found
 
     # 2. Check local ffmpeg/ directory (populated by auto-downloader)
-    from app.services.ffmpeg_downloader import get_local_binary_path
-
-    local = get_local_binary_path(name)
-    if local:
-        return local
+    if getattr(sys, "frozen", False):
+        local_dir = Path(sys.executable).parent / "ffmpeg"
+    else:
+        local_dir = Path.cwd().parent / "ffmpeg"
+    suffix = ".exe" if sys.platform == "win32" else ""
+    local_bin = local_dir / f"{name}{suffix}"
+    if local_bin.is_file():
+        return str(local_bin)
 
     # 3. On Windows, check common install directories
     if sys.platform == "win32":
