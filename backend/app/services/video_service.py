@@ -182,6 +182,8 @@ async def compress_video(
                 stderr=asyncio.subprocess.PIPE,
             )
         except FileNotFoundError:
+            job.status = "failed"
+            job.error = f"FFmpeg not found at '{settings.ffmpeg_path}'"
             raise CompressionError(
                 f"FFmpeg not found at '{settings.ffmpeg_path}'.\n\n"
                 "Please install FFmpeg and make sure it is in your PATH.\n"
