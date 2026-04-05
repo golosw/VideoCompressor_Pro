@@ -83,6 +83,7 @@ class VideoCompressorApp(ctk.CTk):
         self._metadata = None
         self._ai_result = None
         self._compressing = False
+        self._ffmpeg_downloading = False
 
         settings.ensure_dirs()
 
@@ -144,7 +145,7 @@ class VideoCompressorApp(ctk.CTk):
         )
         self._ffmpeg_dl_btn.pack(side="left", padx=(0, 12))
 
-        ctk.CTkButton(
+        self._ffmpeg_skip_btn = ctk.CTkButton(
             btn_row,
             text="Skip",
             fg_color=CARD_BG,
@@ -154,7 +155,8 @@ class VideoCompressorApp(ctk.CTk):
             height=48,
             width=100,
             command=self._show_upload_view,
-        ).pack(side="left")
+        )
+        self._ffmpeg_skip_btn.pack(side="left")
 
         ctk.CTkLabel(
             center,
@@ -165,7 +167,9 @@ class VideoCompressorApp(ctk.CTk):
 
     def _download_ffmpeg(self) -> None:
         """Start FFmpeg download in a background thread."""
+        self._ffmpeg_downloading = True
         self._ffmpeg_dl_btn.configure(text="\u23f3  Downloading...", state="disabled")
+        self._ffmpeg_skip_btn.configure(state="disabled")
         self._ffmpeg_progress_bar.pack(pady=(0, 8))
         self._ffmpeg_progress_label.pack()
 
@@ -183,15 +187,25 @@ class VideoCompressorApp(ctk.CTk):
         threading.Thread(target=run, daemon=True).start()
 
     def _update_ffmpeg_progress(self, pct: float, status: str) -> None:
-        self._ffmpeg_progress_bar.set(pct / 100)
-        self._ffmpeg_progress_label.configure(text=status)
+        if not self._ffmpeg_downloading:
+            return
+        try:
+            self._ffmpeg_progress_bar.set(pct / 100)
+            self._ffmpeg_progress_label.configure(text=status)
+        except Exception:
+            pass  # Widget may have been destroyed if window is closing
 
     def _on_ffmpeg_download_done(self) -> None:
-        # Refresh settings with newly available binaries
+        navigated_away = not self._ffmpeg_downloading
+        self._ffmpeg_downloading = False
+        # Always refresh settings so the current session can use FFmpeg
         from app.core.config import _find_ffmpeg_binary
 
         settings.ffmpeg_path = _find_ffmpeg_binary("ffmpeg")
         settings.ffprobe_path = _find_ffmpeg_binary("ffprobe")
+
+        if navigated_away:
+            return  # Binaries are updated; skip UI changes to not disrupt user
 
         messagebox.showinfo(
             "FFmpeg Installed",
@@ -201,7 +215,15 @@ class VideoCompressorApp(ctk.CTk):
         self._show_upload_view()
 
     def _on_ffmpeg_download_error(self, error: str) -> None:
-        self._ffmpeg_dl_btn.configure(text="\u2b07  Download FFmpeg", state="normal")
+        navigated_away = not self._ffmpeg_downloading
+        self._ffmpeg_downloading = False
+        if navigated_away:
+            return  # User already moved on; don't pop up an intrusive dialog
+        try:
+            self._ffmpeg_dl_btn.configure(text="\u2b07  Download FFmpeg", state="normal")
+            self._ffmpeg_skip_btn.configure(state="normal")
+        except Exception:
+            pass  # Widgets may have been destroyed
         messagebox.showerror(
             "Download Failed",
             f"Failed to download FFmpeg:\n{error}\n\n"
@@ -981,6 +1003,7 @@ class VideoCompressorApp(ctk.CTk):
         self._metadata = None
         self._ai_result = None
         self._compressing = False
+        self._ffmpeg_downloading = False
         self._show_upload_view()
 
 
