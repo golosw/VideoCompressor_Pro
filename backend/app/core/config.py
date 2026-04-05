@@ -54,7 +54,7 @@ class Settings(BaseSettings):
     ai_model: str = "qwen2.5-coder:7b"
     ai_timeout: int = 30
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
     def ensure_dirs(self) -> None:
         Path(self.upload_dir).mkdir(parents=True, exist_ok=True)
