@@ -84,25 +84,17 @@ if errorlevel 1 (
     echo FFPROBE_PATH=ffprobe>> .env
 )
 
-:: Build portable .exe with PyInstaller
-echo [4/4] Building portable executable...
+:: Build portable GUI .exe with PyInstaller
+echo [4/4] Building portable GUI executable...
 pyinstaller ^
     --name VideoCompressorPro ^
     --onefile ^
-    --console ^
+    --windowed ^
     --add-data "app;app" ^
     --add-data ".env.example;." ^
-    --hidden-import uvicorn.logging ^
-    --hidden-import uvicorn.loops ^
-    --hidden-import uvicorn.loops.auto ^
-    --hidden-import uvicorn.protocols ^
-    --hidden-import uvicorn.protocols.http ^
-    --hidden-import uvicorn.protocols.http.auto ^
-    --hidden-import uvicorn.protocols.websockets ^
-    --hidden-import uvicorn.protocols.websockets.auto ^
-    --hidden-import uvicorn.lifespan ^
-    --hidden-import uvicorn.lifespan.on ^
-    --hidden-import uvicorn.lifespan.off ^
+    --add-data "%CD%\venv\Lib\site-packages\customtkinter;customtkinter" ^
+    --hidden-import customtkinter ^
+    --hidden-import darkdetect ^
     --hidden-import app.main ^
     --hidden-import app.core.config ^
     --hidden-import app.core.logging ^
@@ -117,11 +109,11 @@ pyinstaller ^
     --hidden-import aiofiles ^
     --hidden-import pydantic_settings ^
     --hidden-import dotenv ^
-    --collect-submodules uvicorn ^
-    --collect-submodules fastapi ^
-    --collect-submodules starlette ^
     --collect-submodules pydantic ^
-    run.py
+    --collect-submodules customtkinter ^
+    --collect-submodules starlette ^
+    --collect-submodules fastapi ^
+    ..\gui\app.py
 
 if errorlevel 1 (
     echo [ERROR] PyInstaller build failed.
@@ -136,13 +128,14 @@ echo ============================================
 echo.
 echo   Executable: backend\dist\VideoCompressorPro.exe
 echo.
-echo   To run the server:
+echo   To run:
 echo     1. Make sure FFmpeg is installed and in PATH
 echo     2. Double-click VideoCompressorPro.exe
 echo        or run: dist\VideoCompressorPro.exe
-echo     3. Open http://localhost:8000 in your browser
+echo     3. The app opens fullscreen automatically
+echo        Press ESC or F11 to toggle fullscreen
 echo.
-echo   Configuration: Edit .env to change settings
+echo   Configuration: Edit backend\.env to change settings
 echo ============================================
 echo.
 pause
