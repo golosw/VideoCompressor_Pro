@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "video-compressor-pro"
+version = "1.0.0"
+description = "Production-ready video compression API with AI-powered optimization"
+authors = ["VideoCompressor Pro Team"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = {extras = ["standard"], version = "^0.135.3"}
+python-multipart = "^0.0.20"
+python-dotenv = "^1.1.0"
+httpx = "^0.28.1"
+aiofiles = "^24.1.0"
+pydantic = "^2.11.1"
+pydantic-settings = "^2.8.1"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.11.2"
+pytest = "^8.3.5"
+pytest-asyncio = "^0.25.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
