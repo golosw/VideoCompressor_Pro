@@ -196,14 +196,16 @@ class VideoCompressorApp(ctk.CTk):
             pass  # Widget may have been destroyed if window is closing
 
     def _on_ffmpeg_download_done(self) -> None:
-        if not self._ffmpeg_downloading:
-            return  # User navigated away; don't interrupt their current view
+        navigated_away = not self._ffmpeg_downloading
         self._ffmpeg_downloading = False
-        # Refresh settings with newly available binaries
+        # Always refresh settings so the current session can use FFmpeg
         from app.core.config import _find_ffmpeg_binary
 
         settings.ffmpeg_path = _find_ffmpeg_binary("ffmpeg")
         settings.ffprobe_path = _find_ffmpeg_binary("ffprobe")
+
+        if navigated_away:
+            return  # Binaries are updated; skip UI changes to not disrupt user
 
         messagebox.showinfo(
             "FFmpeg Installed",
